@@ -54,6 +54,26 @@ import static java.util.Collections.singletonList;
  *   //code that downloads the file
  * }
  * </pre>
+ *
+ * <h2>Testing code that writes files</h2>
+ * <p>If you test code that writes files to an SFTP server then you need to
+ * verify the upload. Fake SFTP Server Rule provides a shortcut for getting the
+ * file's content from the server.
+ * <pre>
+ * &#064;Test
+ * public void testTextFile() {
+ *   //code that uploads the file
+ *   String fileContent = {@link #getFileContent(String, Charset) sftpServer.getFileContent}("/directory/file.txt", UTF_8);
+ *   ...
+ * }
+ *
+ * &#064;Test
+ * public void testBinaryFile() {
+ *   //code that uploads the file
+ *   byte[] fileContent = {@link #getFileContent(String) sftpServer.getFileContent}("/directory/file.bin");
+ *   ...
+ * }
+ * </pre>
  */
 public class FakeSftpServerRule implements TestRule {
     private static final int PORT = 23454;
@@ -97,6 +117,26 @@ public class FakeSftpServerRule implements TestRule {
         if (directory != null && !directory.equals(pathAsObject.getRoot()))
             createDirectories(directory);
         write(pathAsObject, content);
+    }
+
+    /**
+     * Get a text file from the SFTP server. The file is decoded using the
+     * specified encoding.
+     * @param path the path to the file.
+     * @param encoding the file's encoding.
+     * @return the content of the text file.
+     */
+    public String getFileContent(String path, Charset encoding) {
+        return null;
+    }
+
+    /**
+     * Get a file from the SFTP server.
+     * @param path the path to the file.
+     * @return the content of the file.
+     */
+    public byte[] getFileContent(String path) {
+        return null;
     }
 
     @Override
