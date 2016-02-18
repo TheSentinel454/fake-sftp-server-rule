@@ -8,10 +8,16 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static com.github.marschall.memoryfilesystem.MemoryFileSystemBuilder.newLinux;
+import static java.nio.file.Files.createDirectories;
+import static java.nio.file.Files.write;
 import static java.util.Collections.singletonList;
 
 /**
@@ -34,6 +40,8 @@ import static java.util.Collections.singletonList;
  */
 public class FakeSftpServerRule implements TestRule {
     private static final int PORT = 23454;
+
+    private FileSystem fileSystem;
 
     /**
      * Returns the port of the SFTP server.
@@ -58,7 +66,8 @@ public class FakeSftpServerRule implements TestRule {
     }
 
     private FileSystem createFileSystem() throws IOException {
-        return newLinux().build("FakeSftpServerRule@" + hashCode());
+        fileSystem = newLinux().build("FakeSftpServerRule@" + hashCode());
+        return fileSystem;
     }
 
     private SshServer startServer(FileSystem fileSystem) throws IOException {
@@ -70,5 +79,13 @@ public class FakeSftpServerRule implements TestRule {
         server.setFileSystemFactory((session) -> fileSystem);
         server.start();
         return server;
+    }
+
+    public void putFile(String filename, String content, Charset encoding) throws IOException {
+        Path path = fileSystem.getPath(filename);
+        Path directory = path.getParent();
+        if (!directory.equals(path.getRoot()))
+            createDirectories(directory);
+        write(path, content.getBytes(encoding));
     }
 }

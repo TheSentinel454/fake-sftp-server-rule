@@ -38,12 +38,42 @@ public class FakeSftpServerRuleTest {
         FakeSftpServerRule sftpServer = new FakeSftpServerRule();
         executeTestWithRule(() -> {
             Session session = connectToServer(sftpServer);
-            ChannelSftp channel = (ChannelSftp) session.openChannel("sftp");
-            channel.connect();
+            ChannelSftp channel = connectSftpChannel(session);
             channel.put(
                 new ByteArrayInputStream("dummy content".getBytes(UTF_8)),
                 "dummy_file.txt");
             InputStream file = channel.get("dummy_file.txt");
+            assertThat(IOUtils.toString(file, UTF_8))
+                .isEqualTo("dummy content");
+            channel.disconnect();
+            session.disconnect();
+        }, sftpServer);
+    }
+
+    @Test
+    public void a_file_that_is_put_to_root_directory_via_the_rule_can_be_read_from_server() {
+        FakeSftpServerRule sftpServer = new FakeSftpServerRule();
+        executeTestWithRule(() -> {
+            sftpServer.putFile("/dummy_file.txt", "dummy content", UTF_8);
+            Session session = connectToServer(sftpServer);
+            ChannelSftp channel = connectSftpChannel(session);
+            InputStream file = channel.get("dummy_file.txt");
+            assertThat(IOUtils.toString(file, UTF_8))
+                .isEqualTo("dummy content");
+            channel.disconnect();
+            session.disconnect();
+        }, sftpServer);
+    }
+
+    @Test
+    public void a_file_that_is_put_to_directory_via_the_rule_can_be_read_from_server() {
+        FakeSftpServerRule sftpServer = new FakeSftpServerRule();
+        executeTestWithRule(() -> {
+            sftpServer.putFile(
+                "/dummy_directory/dummy_file.txt", "dummy content", UTF_8);
+            Session session = connectToServer(sftpServer);
+            ChannelSftp channel = connectSftpChannel(session);
+            InputStream file = channel.get("/dummy_directory/dummy_file.txt");
             assertThat(IOUtils.toString(file, UTF_8))
                 .isEqualTo("dummy content");
             channel.disconnect();
@@ -80,5 +110,12 @@ public class FakeSftpServerRuleTest {
         session.setPassword("dummy password");
         session.connect(TIMEOUT);
         return session;
+    }
+
+    private ChannelSftp connectSftpChannel(Session session)
+            throws JSchException {
+        ChannelSftp channel = (ChannelSftp) session.openChannel("sftp");
+        channel.connect();
+        return channel;
     }
 }
